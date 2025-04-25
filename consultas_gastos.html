@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consultas de Gastos por Proyecto (Tono)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+      background: #f0f2f5;
+      color: #333;
+    }
+
+    h1, h2, h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      margin: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    select {
+      padding: 0.6rem;
+      margin: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .result-box {
+      background: white;
+      padding: 1.5rem;
+      margin-top: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      max-height: 800px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    table, th, td {
+      font-size: 0.75rem;
+      line-height: 1.2;
+    }
+
+    th, td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .highlight {
+      color: #007bff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Consultas de Gastos (Tono)</h1>
+
+  <div style="text-align: center;">
+    <button onclick="consultar('proyecto')">Gastos por Proyecto</button>
+    <button onclick="consultar('proveedor')">Gastos por Proveedor</button>
+    <button onclick="consultar('concepto')">Buscar por Concepto</button>
+    <button onclick="consultar('categoria')">Gastos por Categoría</button>
+    <button onclick="window.open('editor_gastos.html', '_blank')">Editar/Añadir Gastos</button>
+    <br>
+    <select id="selectorProyecto" onchange="mostrarDetalleProyecto(this.value)">
+      <option value="">-- Selecciona un proyecto --</option>
+    </select>
+  </div>
+
+  <div class="result-box" id="resultado">Haz clic en un botón para ver resultados aquí...</div>
+
+  <script>
+    const coloresCategorias = {
+      "Transporte": "#ff6384",
+      "Material": "#36a2eb",
+      "Alojamiento": "#ffce56",
+      "Alquiler": "#4bc0c0",
+      "Otros": "#9966ff",
+      "Sin Categoría": "#c9cbcf"
+    };
+
+    let gastos = [];
+    let ingresos = [];
+
+    async function cargarGastos() {
+      try {
+        const responseGastos = await fetch('https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec?hoja=GASTOS-FACTURAS');
+        const responseIngresos = await fetch('https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec?hoja=INGRESOS-PROYECTOS');
+        gastos = await responseGastos.json();
+        ingresos = await responseIngresos.json();
+
+        const proyectosUnicos = [...new Set(gastos.map(g => g.PROYECTO))];
+        const selector = document.getElementById('selectorProyecto');
+        proyectosUnicos.forEach(proy => {
+          const option = document.createElement('option');
+          option.value = proy;
+          option.textContent = proy;
+          selector.appendChild(option);
+        });
+
+      } catch (error) {
+        console.error("Error cargando datos:", error);
+        document.getElementById('resultado').innerHTML = '<p class="highlight">Error cargando datos de gastos.</p>';
+      }
+    }
+
+    function formatEuros(num) {
+      const n = parseFloat((num || '0').toString().replace(",", "."));
+      if (isNaN(n)) return "0,00 €";
+      return n.toLocaleString('es-ES', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2,
+        useGrouping: true 
+      }) + " €";
+    }
+
+    // CONFIRMADO: Todos los importes económicos en las tablas generadas pasan por formatEuros().
+    // Si en el futuro se añaden nuevas tablas o columnas de importes, envolver siempre en formatEuros().
+    function consultar(tipo) {
+      const resultadoDiv = document.getElementById('resultado');
+      let html = '';
+
+      if (tipo === 'proyecto') {
+        const selector = document.getElementById('selectorProyecto');
+        const proyectoSeleccionado = selector.value;
+        if (!proyectoSeleccionado) {
+          resultadoDiv.innerHTML = '<p class="highlight">Selecciona un proyecto.</p>';
+          return;
+        }
+        const gastosProyecto = gastos.filter(g => g.PROYECTO === proyectoSeleccionado);
+        if (gastosProyecto.length === 0) {
+          resultadoDiv.innerHTML = '<p class="highlight">No hay gastos para este proyecto.</p>';
+          return;
+        }
+        let resumenCategorias = {};
+        let totalProyecto = 0;
+        for (const g of gastosProyecto) {
+          const cat = g.CATEGORIA || 'Sin Categoría';
+          resumenCategorias[cat] = (resumenCategorias[cat] || 0) + parseFloat(g['Con IVA'] || 0);
+          totalProyecto += parseFloat(g['Con IVA'] || 0);
+        }
+        html = `<h2>Gastos por Categoría para: ${proyectoSeleccionado}</h2><table><thead><tr><th>Categoría</th><th>Total</th></tr></thead><tbody>`;
+        for (const [cat, total] of Object.entries(resumenCategorias)) {
+          html += `<tr><td>${cat}</td><td>${formatEuros(total)}</td></tr>`;
+        }
+        html += `<tr><th>Total Gastos</th><th>${formatEuros(totalProyecto)}</th></tr></tbody></table>`;
+
+      } else if (tipo === 'proveedor') {
+        const resumen = {};
+        for (const g of gastos) {
+          const proveedor = g.PROVEEDOR || 'Sin proveedor';
+          resumen[proveedor] = (resumen[proveedor] || 0) + parseFloat(g['Gasto Imputado'] || 0);
+        }
+        const ordenado = Object.entries(resumen).sort((a, b) => b[1] - a[1]);
+
+        html = '<h2>Gastos por Proveedor</h2><table><thead><tr><th>Proveedor</th><th>Total</th></tr></thead><tbody>';
+        for (const [proveedor, total] of ordenado) {
+          html += `<tr><td><a href="#" onclick="mostrarDetalleProveedor('${proveedor}')">${proveedor}</a></td><td>${formatEuros(total)}</td></tr>`;
+        }
+        html += '</tbody></table>';
+
+      } else if (tipo === 'concepto') {
+        const buscar = prompt('Introduce parte del concepto a buscar:');
+        if (!buscar) return;
+
+        const encontrados = gastos.filter(g => g.CONCEPTO && g.CONCEPTO.toLowerCase().includes(buscar.toLowerCase()));
+
+        html = '<h2>Resultados de búsqueda</h2><table><thead><tr><th>Proyecto</th><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Observaciones</th><th>Importe</th></tr></thead><tbody>';
+        for (const g of encontrados) {
+          html += `<tr><td>${g.PROYECTO}</td><td>${g.FECHA ? formatearFecha(g.FECHA) : ''}</td><td>${g.CONCEPTO}</td><td>${g.CATEGORIA}</td><td>${g.OBSERVACIONES || ''}</td><td>${formatEuros(g['Con IVA'] || 0)}</td></tr>`;
+        }
+        html += '</tbody></table>';
+      } else if (tipo === 'categoria') {
+        const resumen = {};
+        for (const g of gastos) {
+          const cat = g.CATEGORIA || 'Sin Categoría';
+          resumen[cat] = (resumen[cat] || 0) + parseFloat(g['Gasto Imputado'] || 0);
+        }
+        const ordenado = Object.entries(resumen).sort((a, b) => b[1] - a[1]);
+
+        let html = '<h2>Gastos por Categoría</h2><table><thead><tr><th>Categoría</th><th>Total Gastado</th></tr></thead><tbody>';
+        for (const [cat, total] of ordenado) {
+          html += `<tr><td><a href="#" onclick="mostrarDetalleCategoria('${cat}')">${cat}</a></td><td>${formatEuros(total)}</td></tr>`;
+        }
+        // Añadir la fila con el total sumado de todos los gastos imputados por categoría
+        html += `
+  <tr style="background-color: #007bff; color: white;">
+    <th style="text-align: right;">TOTAL</th>
+    <th>\${formatEuros(ordenado.reduce((acc, curr) => acc + curr[1], 0))}</th>
+  </tr>
+`;
+        html += '</tbody></table>';
+
+        html += '<canvas id="graficoCategoriasGeneral" style="max-width:600px;margin:auto;margin-top:2rem;"></canvas>';
+
+        resultadoDiv.innerHTML = html;
+
+        const ctx = document.getElementById('graficoCategoriasGeneral').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ordenado.map(c => c[0]),
+            datasets: [{
+              label: 'Gasto Imputado (€)',
+              data: ordenado.map(c => c[1]),
+              backgroundColor: ordenado.map(c => {
+                let color = coloresCategorias[c[0]];
+                if (!color) {
+                  color = '#'+Math.floor(Math.random()*16777215).toString(16);
+                  coloresCategorias[c[0]] = color;
+                }
+                return color;
+              })
+            }]
+          },
+          options: {
+            indexAxis: 'x',
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => formatEuros(ctx.parsed.y)
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: value => formatEuros(value)
+                }
+              }
+            }
+          }
+        });
+      }
+
+      if (tipo !== 'categoria') {
+  resultadoDiv.innerHTML = html || '<p class="highlight">No se encontraron datos.</p>';
+}
+    }
+
+    function mostrarDetalleProyecto(proyectoSeleccionado) {
+      const gastosProyecto = gastos.filter(g => g.PROYECTO === proyectoSeleccionado);
+      if (gastosProyecto.length === 0) {
+        document.getElementById('resultado').innerHTML = '<p class="highlight">No hay gastos para este proyecto.</p>';
+        return;
+      }
+
+      const codigo = gastosProyecto[0].CODIGO;
+      let html = '';
+      html += '<button onclick="probarIngresosProyecto(\'' + codigo + '\')">📥 Ver ingresos para este código</button>';
+
+      let resumenCategorias = {};
+      let totalGastos = 0;
+      html += `<h2>Detalle de: ${proyectoSeleccionado}</h2>`;
+      html += '<table><thead><tr><th>Fecha</th><th>Factura</th><th>Concepto</th><th>Categoría</th><th>Proveedor</th><th>Neto</th><th>IVA</th><th>Con IVA</th><th>Observaciones</th><th>Porcentaje</th><th>Gasto Imputado</th></tr></thead><tbody>';
+
+      for (const g of gastosProyecto) {
+        const cat = g.CATEGORIA || 'Sin Categoría';
+        let colorCategoria = coloresCategorias[cat];
+        if (!colorCategoria) {
+          // Asignar color aleatorio si no existe en el diccionario
+          colorCategoria = '#'+Math.floor(Math.random()*16777215).toString(16);
+          coloresCategorias[cat] = colorCategoria;
+        }
+        html += `<tr style="background-color:${colorCategoria}22;"> <!-- color con transparencia -->
+          <td style="white-space: nowrap;">${g.FECHA ? formatearFecha(g.FECHA) : ''}</td>
+          <td>${g.FACTURA || ''}</td>
+          <td>${g.CONCEPTO || ''}</td>
+          <td>${cat}</td>
+          <td>${g.PROVEEDOR || ''}</td>
+          <td>${formatEuros(g.NETO || g.Neto || 0)}</td>
+          <td>${formatEuros(g.IVA || 0)}</td>
+          <td>${formatEuros(g['Con IVA'] || 0)}</td>
+          <td>${g.OBSERVACIONES || ''}</td>
+          <td>${g.PORCENTAJE ? g.PORCENTAJE + '%' : ''}</td>
+          <td>${formatEuros(g['Gasto Imputado'] || 0)}</td>
+        </tr>`;
+        resumenCategorias[cat] = (resumenCategorias[cat] || 0) + parseFloat(g['Con IVA'] || 0);
+        totalGastos += parseFloat(g['Gasto Imputado'] || 0);
+      }
+      html += '</tbody></table>';
+
+
+      const ingresoProyecto = ingresos.find(i => i.CODIGO === codigo);
+      let netoIngresos = ingresoProyecto ? parseFloat(ingresoProyecto.NETO?.toString().replace(",", ".") || 0) : 0;
+      let diferencia = netoIngresos - totalGastos;
+
+      html += `
+        <h3>Resumen Financiero</h3>
+        <table>
+          <tr><th style="background:#337af7;color:white">Ingresos</th><td>${formatEuros(netoIngresos)}</td></tr>
+          <tr><th style="background:#337af7;color:white">Gastos</th><td>${formatEuros(totalGastos)}</td></tr>
+          <tr><th style="background:#337af7;color:white">Diferencia</th><td>${formatEuros(diferencia)}</td></tr>
+        </table>
+      `;
+
+      // Recalcular subtotales por categoría con "Gasto Imputado"
+      const resumenImputados = {};
+      for (const g of gastosProyecto) {
+        const cat = g.CATEGORIA || 'Sin Categoría';
+        resumenImputados[cat] = (resumenImputados[cat] || 0) + parseFloat(g['Gasto Imputado'] || 0);
+      }
+
+      // Tabla de subtotales por categoría con color de fondo
+      html += `<h3>Subtotales por Categoría (Gasto Imputado)</h3>`;
+      html += `<table><thead><tr><th>Categoría</th><th>Subtotal</th></tr></thead><tbody>`;
+      for (const [cat, subtotal] of Object.entries(resumenImputados)) {
+        let colorCategoria = coloresCategorias[cat];
+        if (!colorCategoria) {
+          colorCategoria = '#'+Math.floor(Math.random()*16777215).toString(16);
+          coloresCategorias[cat] = colorCategoria;
+        }
+        html += `<tr><td style="background-color:${colorCategoria}33;">${cat}</td><td style="background-color:${colorCategoria}22;">${formatEuros(subtotal)}</td></tr>`;
+      }
+      html += `</tbody></table>`;
+
+      html += `<canvas id="graficoCategorias" style="max-width:600px;margin:auto;"></canvas>`;
+
+      document.getElementById('resultado').innerHTML = html;
+
+      // Ordenar categorías de mayor a menor
+      const categoriasOrdenadas = Object.entries(resumenImputados)
+        .sort((a, b) => b[1] - a[1]);
+
+      const ctx = document.getElementById('graficoCategorias').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: categoriasOrdenadas.map(c => c[0]),
+          datasets: [{
+            label: 'Gasto Imputado (€)',
+            data: categoriasOrdenadas.map(c => c[1]),
+            backgroundColor: categoriasOrdenadas.map(c => {
+              let color = coloresCategorias[c[0]];
+              if (!color) {
+                color = '#'+Math.floor(Math.random()*16777215).toString(16);
+                coloresCategorias[c[0]] = color;
+              }
+              return color;
+            })
+          }]
+        },
+        options: {
+          indexAxis: 'x',
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => formatEuros(ctx.parsed.y)
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: value => formatEuros(value)
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function mostrarDetalleProveedor(proveedor) {
+      const gastosProveedor = gastos.filter(g => g.PROVEEDOR === proveedor);
+      let html = `<h2>Detalle de: ${proveedor}</h2>`;
+      html += '<table><thead><tr><th>Proyecto</th><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Observaciones</th><th>Gasto Imputado (€)</th></tr></thead><tbody>';
+      let totalProveedor = 0;
+      for (const g of gastosProveedor) {
+        const importe = parseFloat(g['Gasto Imputado'] || 0);
+        totalProveedor += importe;
+        html += `<tr><td>${g.PROYECTO}</td><td style="white-space: nowrap;">${g.FECHA ? formatearFecha(g.FECHA) : ''}</td><td>${g.CONCEPTO}</td><td>${g.CATEGORIA}</td><td>${g.OBSERVACIONES || ''}</td><td>${formatEuros(importe)}</td></tr>`;
+      }
+      html += `<tr style="background-color:#007bff;color:white;">
+        <th colspan="5" style="text-align: right;">TOTAL</th>
+        <th style="text-align: right;">${formatEuros(totalProveedor)}</th>
+      </tr>`;
+      html += '</tbody></table>';
+
+      document.getElementById('resultado').innerHTML = html;
+    }
+
+    function formatearFecha(fechaISO) {
+      const d = new Date(fechaISO);
+      return d.toLocaleDateString('es-ES');
+    }
+
+    function probarIngresosProyecto(codigo) {
+      const ingresoProyecto = ingresos.find(i => i.CODIGO === codigo);
+      let netoIngresos = ingresoProyecto ? parseFloat(ingresoProyecto.NETO?.toString().replace(",", ".") || 0) : 0;
+      alert("Ingresos capturados para código " + codigo + ": " + formatEuros(netoIngresos));
+    }
+
+    function mostrarDetalleCategoria(categoria) {
+      const gastosCategoria = gastos.filter(g => (g.CATEGORIA || 'Sin Categoría') === categoria);
+      let html = `<h2>Gastos para la categoría: ${categoria}</h2>`;
+      html += '<table><thead><tr><th>Proyecto</th><th>Fecha</th><th>Concepto</th><th>Proveedor</th><th>Gasto Imputado (€)</th></tr></thead><tbody>';
+      for (const g of gastosCategoria) {
+        html += `<tr>
+          <td>${g.PROYECTO}</td>
+          <td style="white-space: nowrap;">${g.FECHA ? formatearFecha(g.FECHA) : ''}</td>
+          <td>${g.CONCEPTO}</td>
+          <td>${g.PROVEEDOR}</td>
+          <td><strong>${formatEuros(g['Gasto Imputado'] || 0)}</strong></td>
+        </tr>`;
+      }
+      // Calcular el total de gasto imputado y añadir la fila extra
+      const totalCategoria = gastosCategoria.reduce((acc, g) => acc + parseFloat(g['Gasto Imputado'] || 0), 0);
+      html += `<tr style="background-color:#007bff;color:white;">
+        <th colspan="4" style="text-align: right;">TOTAL</th>
+        <th style="text-align: right;">${formatEuros(totalCategoria)}</th>
+      </tr>`;
+      html += '</tbody></table>';
+
+      document.getElementById('resultado').innerHTML = html;
+    }
+
+    cargarGastos();
+  </script>
+</body>
+</html>
