@@ -136,6 +136,13 @@ async function cargarGastos() {
     gastos = await responseGastos.json();
     ingresos = await responseIngresos.json();
 
+    if (!Array.isArray(gastos)) {
+      console.error('❌ Error: gastos no es un array:', gastos);
+      document.getElementById('resultado').innerHTML = '<p class="highlight">Error cargando gastos.</p>';
+      gastos = [];
+      return;
+    }
+
     console.log('✅ Gastos cargados:', gastos.length);
     console.log('✅ Ingresos cargados:', ingresos.length);
 
