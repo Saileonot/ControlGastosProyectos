@@ -197,11 +197,11 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
-  const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec', {
-    method: 'POST',
-    body: JSON.stringify({ accion: "guardar", gasto }),
-    headers: { 'Content-Type': 'application/json' }
-  });
+    const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/?url=https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wqhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec', {
+      method: 'POST',
+      body: JSON.stringify({ accion: "guardar", gasto }),
+      headers: { 'Content-Type': 'application/json' }
+    });
     const result = await response.json();
 
     if (result.success) {
@@ -231,7 +231,7 @@ async function cargarOpciones() {
 
   const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
     try {
-      const response = await fetch(`${baseUrl}?hoja=${encodeURIComponent(hoja)}`);
+      const response = await fetch(`https://proxy-cors-tono.tono-865.workers.dev/${baseUrl}?hoja=${encodeURIComponent(hoja)}`);
       const datos = await response.json();
       const select = document.getElementById(elementoId);
       select.innerHTML = '<option value="">-- Selecciona --</option>';
@@ -257,7 +257,7 @@ async function cargarOpciones() {
 
   // Cargar los gastos para calcular el siguiente orden
   try {
-    const responseGastos = await fetch(baseUrl + "?hoja=GASTOS-FACTURAS");
+    const responseGastos = await fetch(`https://proxy-cors-tono.tono-865.workers.dev/${baseUrl}?hoja=GASTOS-FACTURAS`);
     const gastosExistentes = await responseGastos.json();
     console.log("✅ Gastos existentes:", gastosExistentes);
 
