@@ -81,7 +81,7 @@ let ingresos = [];
 
 async function cargarGastos() {
   try {
-    const baseUrl = 'https://script.google.com/macros/s/AKfycbwlJbFOBAc8kDfRHYU9QodHNguCF_Nb6bwPZrumlQq0Zy_sNBsl4qSaNQKHURM17Uh0/exec';
+    const baseUrl = 'https://script.google.com/macros/s/AKfycbw_ud8Ri4n2zTUuYyWHAbmnlgll4r2skXJq5EKg6qlZeQgwObNKurM0Xux1Lae0gBzh/exec';
     const responseGastos = await fetch('https://proxy-cors-tono.tono-865.workers.dev/' + baseUrl + '?hoja=GASTOS-FACTURAS');
     const responseIngresos = await fetch('https://proxy-cors-tono.tono-865.workers.dev/' + baseUrl + '?hoja=INGRESOS-PROYECTOS');
     
