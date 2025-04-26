@@ -226,28 +226,29 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-async function cargarOpciones() {
-  const baseUrl = 'https://script.google.com/macros/s/AKfycbw_ud8Ri4n2zTUuYyWHAbmnlgll4r2skXJq5EKg6qlZeQgwObNKurM0Xux1Lae0gBzh/exec';
-
-  const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
-    try {
-      const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/' + baseUrl + '?hoja=' + encodeURIComponent(hoja));
-      const datos = await response.json();
-      const select = document.getElementById(elementoId);
-      select.innerHTML = '<option value="">-- Selecciona --</option>';
-      datos.forEach(fila => {
-        if (fila[campo]) {
-          const opcion = document.createElement('option');
-          opcion.value = fila[campo];
-          opcion.textContent = campoTexto ? `${fila[campo]} - ${fila[campoTexto]}` : fila[campo];
-          select.appendChild(opcion);
-        }
-      });
-      console.log(`✅ Cargado ${hoja}:`, datos);
-    } catch (error) {
-      console.error(`❌ Error cargando ${hoja}:`, error);
-    }
-  };
+  async function cargarOpciones() {
+    const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec';
+  
+    const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
+      try {
+        const response = await fetch(baseUrl + '?hoja=' + encodeURIComponent(hoja));
+        const datos = await response.json();
+        const select = document.getElementById(elementoId);
+        select.innerHTML = '<option value="">-- Selecciona --</option>';
+        datos.forEach(fila => {
+          if (fila[campo]) {
+            const opcion = document.createElement('option');
+            opcion.value = fila[campo];
+            opcion.textContent = campoTexto ? `${fila[campo]} - ${fila[campoTexto]}` : fila[campo];
+            select.appendChild(opcion);
+          }
+        });
+        console.log(`✅ Cargado ${hoja}:`, datos);
+      } catch (error) {
+        console.error(`❌ Error cargando ${hoja}:`, error);
+      }
+    };
+  }
 
   await Promise.all([
     cargarYAgregar("LISTAS BD", "categoria", "CATEGORIA"),
