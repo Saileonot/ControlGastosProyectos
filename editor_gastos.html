@@ -167,10 +167,58 @@ function actualizarCalculos() {
   form.gastoImputado.value = (neto * porcentajeValido / 100).toFixed(2);
 }
 
-form.neto.addEventListener('input', actualizarCalculos);
-form.iva.addEventListener('input', actualizarCalculos);
-form.porcentaje.addEventListener('input', actualizarCalculos);
+async function cargarOpciones() {
+  const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec';
 
+  const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
+    try {
+      const response = await fetch(baseUrl + '?hoja=' + encodeURIComponent(hoja));
+      const datos = await response.json();
+      const select = document.getElementById(elementoId);
+      select.innerHTML = '<option value="">-- Selecciona --</option>';
+      datos.forEach(fila => {
+        if (fila[campo]) {
+          const opcion = document.createElement('option');
+          opcion.value = fila[campo];
+          opcion.textContent = campoTexto ? `${fila[campo]} - ${fila[campoTexto]}` : fila[campo];
+          select.appendChild(opcion);
+        }
+      });
+      console.log(`✅ Cargado ${hoja}:`, datos);
+    } catch (error) {
+      console.error(`❌ Error cargando ${hoja}:`, error);
+    }
+  };
+
+  // ⚡ AHORA sí dentro de cargarOpciones:
+  await Promise.all([
+    cargarYAgregar("LISTAS BD", "categoria", "CATEGORIA"),
+    cargarYAgregar("PROVEEDORES", "proveedor", "PROVEEDOR"),
+    cargarYAgregar("INGRESOS-PROYECTOS", "codigo", "CODIGO", "PROYECTO")
+  ]);
+
+  try {
+    const responseGastos = await fetch(baseUrl + '?hoja=GASTOS-FACTURAS');
+    const gastosExistentes = await responseGastos.json();
+    console.log("✅ Gastos existentes:", gastosExistentes);
+
+    const ordenes = gastosExistentes.map(g => parseInt(g.ORDEN)).filter(n => !isNaN(n));
+    const maxOrden = ordenes.length ? Math.max(...ordenes) : 0;
+    form.orden.value = maxOrden + 1;
+    console.log("➡️ Nuevo ORDEN asignado:", form.orden.value);
+  } catch (error) {
+    console.error("❌ Error cargando GASTOS-FACTURAS para asignar ORDEN:", error);
+    form.orden.value = 1;
+  }
+}
+
+// ⚡ Listener que lanza cargarOpciones correctamente:
+window.addEventListener('DOMContentLoaded', async () => {
+  await cargarOpciones();
+  actualizarCalculos();
+});
+
+// ⚡ Y el submit del formulario lo dejas como ya tienes.
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   mensaje.textContent = 'Guardando...';
@@ -197,7 +245,7 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
-    const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/https:/script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec', {
+    const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec', {
       method: 'POST',
       body: JSON.stringify({ accion: "guardar", gasto }),
       headers: { 'Content-Type': 'application/json' }
@@ -224,56 +272,6 @@ form.addEventListener('submit', async (e) => {
     mensaje.style.color = '#721c24';
     setTimeout(() => mensaje.style.display = 'none', 3000);
   }
-});
-
-  async function cargarOpciones() {
-    const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec';
-  
-    const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
-      try {
-        const response = await fetch(baseUrl + '?hoja=' + encodeURIComponent(hoja));
-        const datos = await response.json();
-        const select = document.getElementById(elementoId);
-        select.innerHTML = '<option value="">-- Selecciona --</option>';
-        datos.forEach(fila => {
-          if (fila[campo]) {
-            const opcion = document.createElement('option');
-            opcion.value = fila[campo];
-            opcion.textContent = campoTexto ? `${fila[campo]} - ${fila[campoTexto]}` : fila[campo];
-            select.appendChild(opcion);
-          }
-        });
-        console.log(`✅ Cargado ${hoja}:`, datos);
-      } catch (error) {
-        console.error(`❌ Error cargando ${hoja}:`, error);
-      }
-    };
-  }
-
-  await Promise.all([
-    cargarYAgregar("LISTAS BD", "categoria", "CATEGORIA"),
-    cargarYAgregar("PROVEEDORES", "proveedor", "PROVEEDOR"),
-    cargarYAgregar("INGRESOS-PROYECTOS", "codigo", "CODIGO", "PROYECTO")
-  ]);
-
-  try {
-    const responseGastos = await fetch('https://proxy-cors-tono.tono-865.workers.dev/' + baseUrl + '?hoja=GASTOS-FACTURAS');
-    const gastosExistentes = await responseGastos.json();
-    console.log("✅ Gastos existentes:", gastosExistentes);
-
-    const ordenes = gastosExistentes.map(g => parseInt(g.ORDEN)).filter(n => !isNaN(n));
-    const maxOrden = ordenes.length ? Math.max(...ordenes) : 0;
-    form.orden.value = maxOrden + 1;
-    console.log("➡️ Nuevo ORDEN asignado:", form.orden.value);
-  } catch (error) {
-    console.error("❌ Error cargando GASTOS-FACTURAS para asignar ORDEN:", error);
-    form.orden.value = 1;
-  }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  cargarOpciones();
-  actualizarCalculos();
 });
 </script>
 </body>
