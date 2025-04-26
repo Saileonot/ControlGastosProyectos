@@ -197,7 +197,7 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
-    const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec', {
+    const response = await fetch('https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec', {
       method: 'POST',
       body: JSON.stringify({ accion: "guardar", gasto }),
       headers: { 'Content-Type': 'application/json' }
@@ -227,7 +227,7 @@ form.addEventListener('submit', async (e) => {
 });
 
 async function cargarOpciones() {
-  const baseUrl = 'https://script.google.com/macros/s/AKfycbxcRm9KR0lgl4_G5ENxCNhBVgY-1Sw-ynIF5NWNMLL41kUpEtow4uAsX2kqesSmYQxSRg/exec';
+  const baseUrl = 'https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec';
 
   const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
     try {
