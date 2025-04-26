@@ -200,17 +200,19 @@ async function cargarOpciones() {
   try {
     const responseGastos = await fetch(baseUrl + '?hoja=GASTOS-FACTURAS');
     const gastosExistentes = await responseGastos.json();
+    
+    if (!Array.isArray(gastosExistentes)) {
+      console.error("❌ Error inesperado cargando GASTOS-FACTURAS:", gastosExistentes.error || gastosExistentes);
+      form.orden.value = 1;
+      return;
+    }
+    
     console.log("✅ Gastos existentes:", gastosExistentes);
-
+    
     const ordenes = gastosExistentes.map(g => parseInt(g.ORDEN)).filter(n => !isNaN(n));
     const maxOrden = ordenes.length ? Math.max(...ordenes) : 0;
     form.orden.value = maxOrden + 1;
     console.log("➡️ Nuevo ORDEN asignado:", form.orden.value);
-  } catch (error) {
-    console.error("❌ Error cargando GASTOS-FACTURAS para asignar ORDEN:", error);
-    form.orden.value = 1;
-  }
-}
 
 // ⚡ Listener que lanza cargarOpciones correctamente:
 window.addEventListener('DOMContentLoaded', async () => {
