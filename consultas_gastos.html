@@ -109,8 +109,8 @@
 
     async function cargarGastos() {
       try {
-        const responseGastos = await fetch('https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec?hoja=GASTOS-FACTURAS');
-        const responseIngresos = await fetch('https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec?hoja=INGRESOS-PROYECTOS');
+        const responseGastos = await fetch('https://corsproxy.io/?https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec?hoja=GASTOS-FACTURAS');
+        const responseIngresos = await fetch('https://corsproxy.io/?https://script.google.com/macros/s/AKfycbxLYw6knrtH5QY_VmgYZr2OHValh965wQhvKLjmHl5sGBBV5jIFPx8JXzhsjpEbt_aP/exec?hoja=INGRESOS-PROYECTOS');
         gastos = await responseGastos.json();
         ingresos = await responseIngresos.json();
 
