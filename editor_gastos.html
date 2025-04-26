@@ -75,7 +75,6 @@
 <h1>Editor de Gastos</h1>
 
 <form id="formGasto">
-  <!-- Primera fila -->
   <div>
     <label for="fecha">Fecha</label>
     <input type="date" id="fecha" name="fecha" required />
@@ -85,13 +84,11 @@
     <input type="text" id="factura" name="factura" required />
   </div>
 
-  <!-- Segunda fila (Concepto abarca dos columnas) -->
   <div style="grid-column: span 2;">
     <label for="concepto">Concepto</label>
     <input type="text" id="concepto" name="concepto" required />
   </div>
 
-  <!-- Tercera fila en adelante -->
   <div>
     <label for="codigo">Proyecto</label>
     <select id="codigo" name="codigo" required></select>
@@ -109,11 +106,25 @@
 
   <div>
     <label for="categoria">Categoría</label>
-    <select id="categoria" name="categoria" required></select>
+    <select id="categoria" name="categoria" required>
+      <option value="">-- Selecciona --</option>
+      <option value="Transporte">Transporte</option>
+      <option value="Material">Material</option>
+      <option value="Alojamiento">Alojamiento</option>
+      <option value="Alquiler">Alquiler</option>
+      <option value="Otros">Otros</option>
+      <option value="Sin Categoría">Sin Categoría</option>
+    </select>
   </div>
   <div>
     <label for="proveedor">Proveedor</label>
-    <select id="proveedor" name="proveedor" required></select>
+    <select id="proveedor" name="proveedor" required>
+      <option value="">-- Selecciona --</option>
+      <option value="Proveedor A">Proveedor A</option>
+      <option value="Proveedor B">Proveedor B</option>
+      <option value="Proveedor C">Proveedor C</option>
+      <!-- Añade aquí todos los proveedores que quieras -->
+    </select>
   </div>
 
   <div>
@@ -169,58 +180,52 @@ function actualizarCalculos() {
 
 async function cargarOpciones() {
   const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbxw6mKlud0TE3BsOu4epu3ZIcFqqMfXljvUg3xtVgdKS2mveiSsAJ4dg1v1i55WaORA/exec';
-  const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
-    try {
-      const response = await fetch(baseUrl + '?hoja=' + encodeURIComponent(hoja));
-      const datos = await response.json();
-      
-      if (!Array.isArray(datos)) {
-        console.error(`❌ Error inesperado cargando ${hoja}:`, datos.error || datos);
-        return;
-      }
-      
-      const select = document.getElementById(elementoId);
-      select.innerHTML = '<option value="">-- Selecciona --</option>';
-      datos.forEach(fila => {
-        ...
-      });
-      console.log(`✅ Cargado ${hoja}:`, datos);
-    } catch (error) {
-      console.error(`❌ Error cargando ${hoja}:`, error);
-    }
-  };
-
-  // ⚡ AHORA sí dentro de cargarOpciones:
-  await Promise.all([
-    cargarYAgregar("LISTAS BD", "categoria", "CATEGORIA"),
-    cargarYAgregar("PROVEEDORES", "proveedor", "PROVEEDOR"),
-    cargarYAgregar("INGRESOS-PROYECTOS", "codigo", "CODIGO", "PROYECTO")
-  ]);
-
   try {
+    const response = await fetch(baseUrl + '?hoja=INGRESOS-PROYECTOS');
+    const datos = await response.json();
+
+    if (!Array.isArray(datos)) {
+      console.error(`❌ Error inesperado cargando proyectos:`, datos.error || datos);
+      return;
+    }
+
+    const select = document.getElementById('codigo');
+    select.innerHTML = '<option value="">-- Selecciona --</option>';
+    datos.forEach(fila => {
+      if (fila.CODIGO && fila.PROYECTO) {
+        const option = document.createElement('option');
+        option.value = fila.CODIGO;
+        option.textContent = `${fila.CODIGO} - ${fila.PROYECTO}`;
+        select.appendChild(option);
+      }
+    });
+    console.log("✅ Proyectos cargados:", datos);
+
     const responseGastos = await fetch(baseUrl + '?hoja=GASTOS-FACTURAS');
     const gastosExistentes = await responseGastos.json();
-    
+
     if (!Array.isArray(gastosExistentes)) {
       console.error("❌ Error inesperado cargando GASTOS-FACTURAS:", gastosExistentes.error || gastosExistentes);
       form.orden.value = 1;
       return;
     }
-    
-    console.log("✅ Gastos existentes:", gastosExistentes);
-    
+
     const ordenes = gastosExistentes.map(g => parseInt(g.ORDEN)).filter(n => !isNaN(n));
     const maxOrden = ordenes.length ? Math.max(...ordenes) : 0;
     form.orden.value = maxOrden + 1;
     console.log("➡️ Nuevo ORDEN asignado:", form.orden.value);
 
-// ⚡ Listener que lanza cargarOpciones correctamente:
+  } catch (error) {
+    console.error("❌ Error en carga de datos:", error);
+    form.orden.value = 1;
+  }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   await cargarOpciones();
   actualizarCalculos();
 });
 
-// ⚡ Y el submit del formulario lo dejas como ya tienes.
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   mensaje.textContent = 'Guardando...';
@@ -247,6 +252,7 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
+    const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbxw6mKlud0TE3BsOu4epu3ZIcFqqMfXljvUg3xtVgdKS2mveiSsAJ4dg1v1i55WaORA/exec';
     const response = await fetch(baseUrl, {
       method: 'POST',
       body: JSON.stringify({ accion: "guardar", gasto }),
@@ -278,3 +284,4 @@ form.addEventListener('submit', async (e) => {
 </script>
 </body>
 </html>
+
