@@ -80,25 +80,33 @@ let gastos = [];
 let ingresos = [];
 
 async function cargarGastos() {
+  const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbzcW2d5cKzzufyL9knP9xBeyvr5VdkRJlZq1RI0z5-UT5IbIfytcqyjRzq2sYPv3WlW/exec';
+  
   try {
-    const baseUrl = 'https://script.google.com/macros/s/AKfycbw_ud8Ri4n2zTUuYyWHAbmnlgll4r2skXJq5EKg6qlZeQgwObNKurM0Xux1Lae0gBzh/exec';
-    const responseGastos = await fetch('https://proxy-cors-tono.tono-865.workers.dev/' + baseUrl + '?hoja=GASTOS-FACTURAS');
-    const responseIngresos = await fetch('https://proxy-cors-tono.tono-865.workers.dev/' + baseUrl + '?hoja=INGRESOS-PROYECTOS');
-    
+    const [responseGastos, responseIngresos] = await Promise.all([
+      fetch(baseUrl + '?hoja=GASTOS-FACTURAS'),
+      fetch(baseUrl + '?hoja=INGRESOS-PROYECTOS')
+    ]);
+
     gastos = await responseGastos.json();
     ingresos = await responseIngresos.json();
+
+    console.log('✅ Gastos cargados:', gastos.length);
+    console.log('✅ Ingresos cargados:', ingresos.length);
 
     const proyectosUnicos = [...new Set(gastos.map(g => g.PROYECTO))];
     const selector = document.getElementById('selectorProyecto');
     proyectosUnicos.forEach(proy => {
-      const option = document.createElement('option');
-      option.value = proy;
-      option.textContent = proy;
-      selector.appendChild(option);
+      if (proy) {
+        const option = document.createElement('option');
+        option.value = proy;
+        option.textContent = proy;
+        selector.appendChild(option);
+      }
     });
 
   } catch (error) {
-    console.error("Error cargando datos:", error);
+    console.error("❌ Error cargando datos:", error);
     document.getElementById('resultado').innerHTML = '<p class="highlight">Error cargando datos de gastos.</p>';
   }
 }
@@ -109,8 +117,7 @@ function formatEuros(num) {
   return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true }) + " €";
 }
 
-// Aquí sigue todo tu script normal:
-
+// 👉 Aquí sigues con tus funciones normales:
 function consultar(tipo) { /* ... igual que tenías ... */ }
 function mostrarDetalleProyecto(proyectoSeleccionado) { /* ... igual que tenías ... */ }
 function mostrarDetalleProveedor(proveedor) { /* ... igual que tenías ... */ }
@@ -118,6 +125,7 @@ function formatearFecha(fechaISO) { /* ... igual que tenías ... */ }
 function probarIngresosProyecto(codigo) { /* ... igual que tenías ... */ }
 function mostrarDetalleCategoria(categoria) { /* ... igual que tenías ... */ }
 
+// Lanzamos carga de gastos
 cargarGastos();
 </script>
 
