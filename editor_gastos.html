@@ -173,15 +173,16 @@ async function cargarOpciones() {
     try {
       const response = await fetch(baseUrl + '?hoja=' + encodeURIComponent(hoja));
       const datos = await response.json();
+      
+      if (!Array.isArray(datos)) {
+        console.error(`❌ Error inesperado cargando ${hoja}:`, datos.error || datos);
+        return;
+      }
+      
       const select = document.getElementById(elementoId);
       select.innerHTML = '<option value="">-- Selecciona --</option>';
       datos.forEach(fila => {
-        if (fila[campo]) {
-          const opcion = document.createElement('option');
-          opcion.value = fila[campo];
-          opcion.textContent = campoTexto ? `${fila[campo]} - ${fila[campoTexto]}` : fila[campo];
-          select.appendChild(opcion);
-        }
+        ...
       });
       console.log(`✅ Cargado ${hoja}:`, datos);
     } catch (error) {
