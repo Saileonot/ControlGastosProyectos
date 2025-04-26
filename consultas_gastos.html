@@ -211,7 +211,7 @@
         html += `
   <tr style="background-color: #007bff; color: white;">
     <th style="text-align: right;">TOTAL</th>
-    <th>\${formatEuros(ordenado.reduce((acc, curr) => acc + curr[1], 0))}</th>
+    <th>${formatEuros(ordenado.reduce((acc, curr) => acc + curr[1], 0))}</th>
   </tr>
 `;
         html += '</tbody></table>';
