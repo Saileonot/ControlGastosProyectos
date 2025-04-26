@@ -227,7 +227,7 @@ form.addEventListener('submit', async (e) => {
 });
 
 async function cargarOpciones() {
-  const baseUrl = 'https://script.google.com/macros/s/AKfycbxcRm9KR0lgl4_G5ENxCNhBVgY-1Sw-ynIF5NWNMLL41kUpEtow4uAsX2kqesSmYQxSRg/exec';
+  const baseUrl = 'https://proxy-cors-tono.tono-865.workers.dev/https://script.google.com/macros/s/AKfycbxcRm9KR0lgl4_G5ENxCNhBVgY-1Sw-ynIF5NWNMLL41kUpEtow4uAsX2kqesSmYQxSRg/exec';
 
   const cargarYAgregar = async (hoja, elementoId, campo, campoTexto = null) => {
     try {
@@ -270,7 +270,6 @@ async function cargarOpciones() {
     form.orden.value = 1;
   }
 }
-
 window.addEventListener('DOMContentLoaded', () => {
   cargarOpciones();
   actualizarCalculos();
